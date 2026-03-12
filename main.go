@@ -18,12 +18,6 @@ func main() {
 	fmt.Println("支持多文件同时下载，每个文件分段下载")
 	fmt.Println()
 
-	progressManager := progress.NewProgressManager(3)
-	scheduleManager := progress.NewScheduleManager(3)
-
-	// 1. 【新增】启动速度监控器（计算每秒下载量）
-	progressManager.StartMonitor()
-
 	// 从文件加载任务
 	file, err := os.Open("tasks.json")
 	if err != nil {
@@ -35,6 +29,7 @@ func main() {
 	var config struct {
 		Tasks []task.BaseTask `json:"tasks"`
 	}
+
 	if err := json.NewDecoder(file).Decode(&config); err != nil {
 		logger.LogError("解析任务文件失败: %v", err)
 		return
@@ -43,13 +38,24 @@ func main() {
 	// 准备任务数据
 	tasks := config.Tasks
 
-	for i := 0; i <= 2; i++ {
+	scheduleManager := progress.NewScheduleManager(len(config.Tasks))
+	progressManager := progress.NewProgressManager(len(config.Tasks))
+
+	// 1. 【新增】启动速度监控器（计算每秒下载量）
+	progressManager.StartMonitor()
+
+	for i := 0; i < len(config.Tasks); i++ {
 		t, err := task.NewBaseTask(tasks[i].Concurrency, tasks[i].URL, tasks[i].FilePath, tasks[i].FileName)
 		if err != nil {
 			logger.LogError("创建任务失败: %s, 错误=%v", t.TaskId, err)
 			return
 		}
 		tasks = append(tasks, *t)
+	}
+
+	if task.CheckHasRepeatedFileInfo(tasks) {
+		logger.LogError("任务配置中存在重复的文件路径或文件名")
+		return
 	}
 
 	if err := os.MkdirAll("downloads", 0755); err != nil {

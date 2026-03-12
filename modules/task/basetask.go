@@ -30,3 +30,37 @@ func NewBaseTask(concurrency int, url string, filePath string, fileName string) 
 		FileName:    fileName,
 	}, nil
 }
+
+func CheckFilePath(filepath string) bool {
+	return filepath != ""
+}
+
+func CheckFileName(filename string) bool {
+	return filename != ""
+}
+
+func CheckConcurrency(concurrency int) bool {
+	return concurrency > 0
+}
+
+func CheckURL(url string) bool {
+	return url != ""
+}
+
+func CheckHasRepeatedFileInfo(tasks []BaseTask) bool {
+	filePathMap := make(map[string]bool)
+	for _, task := range tasks {
+		if _, ok := filePathMap[task.FilePath]; ok {
+			return false
+		}
+		filePathMap[task.FilePath] = true
+	}
+	fileNameMap := make(map[string]bool)
+	for _, task := range tasks {
+		if _, ok := fileNameMap[task.FileName]; ok {
+			return false
+		}
+		fileNameMap[task.FileName] = true
+	}
+	return true
+}
