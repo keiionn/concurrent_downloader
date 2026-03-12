@@ -29,13 +29,13 @@ func (pm *ProgressManager) AddProgress(taskID string, nowTask *task.ProgressTask
 	pm.Progresses[taskID] = nowTask
 }
 
-// StartTask 开始一个新任务
+/* // StartTask 开始一个新任务
 func (pm *ProgressManager) StartTask(taskID string, nowTask *task.ProgressTask) {
 	pm.Mu.Lock()
 	defer pm.Mu.Unlock()
 	pm.Progresses[taskID].Status = "downloading"
 	pm.Progresses[taskID].StartTime = time.Now()
-}
+} */
 
 // StartMonitor 启动一个后台协程，定时计算所有任务的速度和进度
 func (pm *ProgressManager) StartMonitor() {

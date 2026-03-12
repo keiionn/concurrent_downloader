@@ -51,16 +51,16 @@ func CheckHasRepeatedFileInfo(tasks []BaseTask) bool {
 	filePathMap := make(map[string]bool)
 	for _, task := range tasks {
 		if _, ok := filePathMap[task.FilePath]; ok {
-			return false
+			return true
 		}
 		filePathMap[task.FilePath] = true
 	}
 	fileNameMap := make(map[string]bool)
 	for _, task := range tasks {
 		if _, ok := fileNameMap[task.FileName]; ok {
-			return false
+			return true
 		}
 		fileNameMap[task.FileName] = true
 	}
-	return true
+	return false
 }

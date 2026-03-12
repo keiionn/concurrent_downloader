@@ -36,7 +36,7 @@ func main() {
 	}
 	logger.LogInfo("成功加载 %d 个任务", len(config.Tasks))
 	// 准备任务数据
-	tasks := config.Tasks
+	tasks := []task.BaseTask{}
 
 	scheduleManager := progress.NewScheduleManager(len(config.Tasks))
 	progressManager := progress.NewProgressManager(len(config.Tasks))
@@ -45,7 +45,7 @@ func main() {
 	progressManager.StartMonitor()
 
 	for i := 0; i < len(config.Tasks); i++ {
-		t, err := task.NewBaseTask(tasks[i].Concurrency, tasks[i].URL, tasks[i].FilePath, tasks[i].FileName)
+		t, err := task.NewBaseTask(config.Tasks[i].Concurrency, config.Tasks[i].URL, config.Tasks[i].FilePath, config.Tasks[i].FileName)
 		if err != nil {
 			logger.LogError("创建任务失败: %s, 错误=%v", t.TaskId, err)
 			return
@@ -63,6 +63,18 @@ func main() {
 		return
 	}
 
+	// 启动任务
+	for _, nowTask := range tasks {
+		// 注意顺序：先 AddProgress 确保 display 能找到这个 ID，再 AddSchedule 启动下载
+		pTask, _ := task.NewProgressTask(&nowTask)
+		progressManager.AddProgress(nowTask.TaskId, pTask)
+
+		scheduleManager.AddSchedule(task.ScheduleTask{
+			TaskInfo: &nowTask,
+		}, progressManager)
+
+		time.Sleep(200 * time.Millisecond)
+	}
 	// 2. 【新增】启动动态 UI 刷新协程
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
@@ -77,26 +89,12 @@ func main() {
 		}
 	}()
 
-	// 启动任务
-	for _, nowTask := range tasks {
-		// 注意顺序：先 AddProgress 确保 display 能找到这个 ID，再 AddSchedule 启动下载
-		pTask, _ := task.NewProgressTask(&nowTask)
-		progressManager.AddProgress(nowTask.TaskId, pTask)
-
-		scheduleManager.AddSchedule(task.ScheduleTask{
-			TaskInfo: &nowTask,
-		}, progressManager)
-
-		time.Sleep(200 * time.Millisecond)
-	}
-
 	// 3. 等待所有下载任务协程结束
 	scheduleManager.Wg.Wait()
 
 	// 4. 收尾：停止 UI 协程并做最后一次打印
 	cancel()
 	time.Sleep(200 * time.Millisecond) // 给 UI 协程一点退出的时间
-	display.DisplayProgress(progressManager)
 
 	fmt.Println("\n所有任务处理完毕")
 }
